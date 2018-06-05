@@ -1,0 +1,70 @@
+---
+title: "Data 606 Presentation"
+author: "Natalie Mollaghan"
+date: "11/30/2017"
+output: html_document
+---
+
+#Data Preperation
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(tidyr)
+library(plyr)
+library(psych)
+```
+
+Load data into R
+
+```{r}
+refugeedata <- read.csv("https://raw.githubusercontent.com/ntlrs/data606finalproject/master/UN%20Data.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+Clean Data
+```{r}
+refugee<-refugeedata[c(1:3)]
+names(refugee)[1] <- "CoO"
+names(refugee)[2] <- "Year"
+names(refugee)[3] <- "Refugees"
+refugee$CoO <- as.factor(refugee$CoO)
+head(refugee)
+```
+
+###Research Question:
+Which countries have the most had biggest increase in refugees since 1975? 
+
+###Cases:
+The UN has data on Refugees migration from 1975-2016
+
+###Type of Study:
+This is an observational study looking at data from 1975 to 2016 for all countries that have been forced to leave their country or territory of origin.
+
+###Data Source:
+The UN data on refugees can be found here: http://data.un.org/Data.aspx?d=UNHCR&f=indID%3AType-Ref#UNHCR
+
+###Response:
+The response variable is a numerical value that represents the number of refugees.
+
+###Explanatory:
+The explanatory variable will be calculated from the years and the number of refugees. 
+
+###Relevant Summary Statistics
+```{r}
+summary(refugee)
+```
+
+```{r}
+refugeeiraq <- subset(refugee, CoO == "Iraq")
+plot(refugeeiraq$Year, refugeeiraq$Refugees, type = "l")
+```
+```{r}
+sum(refugeeiraq$Refugees)
+```
+```{r}
+describe(refugee$Refugees)
+```
+
+
+
