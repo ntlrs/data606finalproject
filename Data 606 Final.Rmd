@@ -1,0 +1,227 @@
+---
+title: "Data 606 Final"
+author: "Natalie Mollaghan"
+date: "12/11/2017"
+output: 
+  html_document:
+  theme: spacelab
+  highlight: tango
+  toc: yes
+  code_folding: hide
+  self_contained: no
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(tidyr)
+library(plyr)
+library(psych)
+```
+
+# Part 1 - Introduction:
+
+'Refugee' is a word we hear in the news often. By definition, a refugee is "one that flees; especially : a person who flees to a foreign country or power to escape danger or persecution". 
+
+Recently, the media has been paying close attention to refugees fleeing conflict areas in the Middle East, dubbing this mass migration of people as a 'Refugee Crisis'. 
+
+I'd like to take a look at how many refugees there are in the world today as opposed to the number of refugees in the world in 1975, to analyze the numbers behind this crisi. I'd also like to take a look at what regions in the world have produced the most refugees or if there has been any country that have seen a decline in citizens seeking aslyum elsewhere.
+
+
+# Part 2 - Data:
+
+####Data Collection:
+My data was obtained from the the UN website (http://data.un.org/Data.aspx?d=UNHCR&f=indID%3AType-Ref#UNHCR). 
+
+
+####Cases:
+The UN has data on Refugees migration from 1975-2016. The data frame includes 96065 observations. This analysis is only looking at three variables, years, refugee numbers, and country of origin.
+
+####Type of Study:
+This is an observational study looking at data from 1975 to 2016 for all countries that have been forced to leave their country or territory of origin.
+
+####Response:
+The response variable is a numerical value that represents the number of refugees.
+
+####Explanatory:
+The explanatory variable will be calculated from the years and the number of refugees. 
+
+####Scope of Inference:
+The population of interest is number of refugees from 1975-2016; while I will only be observing the countries in which the refugees are fleeing, I might be able to detect a trend in whether specific countries are seeing more or less refugees leaving over time. This study will not be able to find any causation of migration trends. 
+
+```{r}
+refugeedata <- read.csv("https://raw.githubusercontent.com/ntlrs/data606finalproject/master/UN%20Data.csv", header = TRUE, stringsAsFactors = FALSE)
+head(refugeedata)
+```
+Clean Data
+```{r}
+refugee<-refugeedata[c(1:3)]
+names(refugee)[1] <- "CoO"
+names(refugee)[2] <- "Year"
+names(refugee)[3] <- "Refugees"
+refugee$CoO <- as.factor(refugee$CoO)
+head(refugee)
+```
+
+
+# Part 3 - Exploratory data analysis:
+
+```{r}
+summary(refugee)
+```
+
+I see that there are 202 cases of NA values in my data. Since this number is small as compared to the total number of refugees, I'm going to omit the NA's from this data set
+
+```{r}
+refugee <- na.omit(refugee)
+summary(refugee)
+```
+
+Now, I'll take a look at some of the summary statistics for the number of refugees in the data frame.
+```{r}
+describe(refugee$Refugees)
+```
+
+The mean number of refugees over the time represented by the data frame is 4947.1, with a standard deviation of 61660.01. 
+
+Since the original data included a column of which countries refugee fled to, there are countries listed several times for any given year. Since I'm only looking at the total number of refugees leaving a particular country, I'm going to combine the data for each country's total number of refugees left per year. 
+```{r}
+allrefugees <- aggregate(refugee$Refugees, by=list(Year=refugee$Year, CoO=refugee$CoO), FUN=sum)
+summary(allrefugees)
+describe(allrefugees$x)
+```
+
+```{r}
+refugeetotals <- aggregate(refugee$Refugees, by=list(Year=refugee$Year), FUN=sum)
+names(refugeetotals)[2] <- "numrefugees"
+
+summary(refugeetotals)
+```
+```{r}
+ggplot(refugeetotals, aes(x=Year, y=numrefugees, group = 1)) +
+    geom_line() + ylab("Total Refugees") + xlab("Years") +
+    ggtitle("Total Number of Refugees") + scale_x_discrete(breaks = c("1975", "1980", "1985", "1990", "1995", "2000", "2005", "2010", "2015"))
+```
+```{r}
+sum(allrefugees$x)
+```
+
+
+```{r}
+top25 <- allrefugees %>%
+  arrange(desc(x)) %>%
+   slice(1:25) 
+top25
+```
+
+
+I wanted to take a look at the country and year that the most refugees came from and Afghanistan occupies 8 of the top 10 slots. 
+```{r}
+afghanistanrefugees <- subset(allrefugees, CoO=="Afghanistan")
+afghanistanrefugees <- afghanistanrefugees[c(1,3)]
+names(afghanistanrefugees)[2] <- "numrefugees"
+describe(afghanistanrefugees$numrefugees)
+```
+```{r}
+ggplot(afghanistanrefugees, aes(x=Year, y=numrefugees, group = 1)) +
+    geom_line() + ylab("Afghanistan") + xlab("Years") +
+    ggtitle("Number of Refugees in Afghanistan") + scale_x_discrete(breaks = c("1975", "1980", "1985", "1990", "1995", "2000", "2005", "2010", "2015"))
+```
+
+```{r}
+sum(afghanistanrefugees$numrefugees)
+```
+```{r}
+(sum(afghanistanrefugees$numrefugees)/sum(allrefugees$x))
+```
+Refugees from Afghanistan make up 26% of the world's refugee population from 1975. 
+```{r}
+noafghanistan <- subset(allrefugees, CoO != "Afghanistan")
+describe(noafghanistan$x)
+```
+```{r}
+refugeewoafghan <- aggregate(noafghanistan$x, by=list(Year=noafghanistan$Year), FUN=sum)
+names(refugeewoafghan)[2] <- "numrefugees"
+
+describe(refugeewoafghan$numrefugees)
+```
+```{r}
+ggplot(refugeewoafghan, aes(x=Year, y=numrefugees, group = 1)) +
+    geom_line() + ylab("Refugees Minus Afghanistan") + xlab("Years") +
+    ggtitle("Number of Refugees w/o Afghanistam") + scale_x_discrete(breaks = c("1975", "1980", "1985", "1990", "1995", "2000", "2005", "2010", "2015"))
+```
+```{r}
+sum(noafghanistan$x)
+```
+
+
+```{r}
+ggplot(refugeetotals, aes(x=Year, y=numrefugees, group = 1), color='green') + 
+geom_line() + 
+geom_line (data = refugeewoafghan, aes(x=Year, Y=numrefugees), color = 'blue') +
+geom_line (data = afghanistanrefugees, aes(x=Year, Y=numrefugees), color = 'red') +  
+   ggtitle("Comparing Total World Refugees with Refugee Totals without Afghanistan") + scale_x_discrete(breaks = c("1975", "1980", "1985", "1990", "1995", "2000", "2005", "2010", "2015"))
+```
+
+
+```{r}
+refugeestats <- data.frame("Year" = refugeewoafghan$Year,
+                           "Num Refugee wo Afghanistan" = refugeewoafghan$numrefugees,
+                           "Total Number of Refugees" = refugeetotals$numrefugees)
+as.integer(refugeestats$Year)
+head(refugeestats)
+```
+
+# Part 4 - Inference:
+
+H0 = There is no relationship between the population of refugees from Afghanistan and the total world refugee population since 1975.
+
+HA = There is a relationship between the population of refugees from Afghanistan and the total world refugee population since 1975.
+
+
+##Conditions
+
+Independence of cases : It is unlikely that the number of refugees from around the world would impact the number of refugees leaving Afghanistan. These cases are independent of one another.
+
+Sample Size/Skew : The Samples size is 474243490, a portion of the population of the world. It meets the minimum sample size to pass this condition.
+
+
+```{r}
+boxplot(refugeestats$Num.Refugee.wo.Afghanistan, refugeestats$Total.Number.of.Refugees, names=c("Total W/O Afghanistan","All Refugees"), col=c("blue","orange"), main="Box Plot of World Refugee Totals with and without Afghanistan")
+```
+
+```{r}
+qq<- lm(Num.Refugee.wo.Afghanistan ~ Total.Number.of.Refugees, data = refugeestats)
+plot(refugeestats$Num.Refugee.wo.Afghanistan ~ refugeestats$Total.Number.of.Refugees, col="blue", xlab="World Refugee Total", ylab="Refugees W/O Afghanistan")
+abline(qq)
+```
+
+```{r}
+costats<-lm(refugeestats$Total.Number.of.Refugees ~ refugeestats$Num.Refugee.wo.Afghanistan)
+summary(costats)
+```
+
+```{r}
+hist(resid(costats))
+```
+```{r}
+qqnorm(resid(costats))
+qqline(resid(costats))
+```
+
+##ANOVA
+```{r}
+anova <- aov(refugeestats$Total.Number.of.Refugees ~ refugeestats$Num.Refugee.wo.Afghanistan)
+summary(anova)
+```
+
+
+# Part 5 - Conclusion: 
+
+Based on the analysis above, the total number of Afghani refugees has had a significant impact on the world's refugee population. We reject the null hypothesis in this instance. Though the number of refugees from Afghanistan is statisically decreasing, the sheer volumn of refugees still contributes to a massive amount of the world's refugee population.
+
+For further research, I would like to look more at contributing factors, such a GDP, Economy, and unrest in countries with large numbers of refugee populations.
+
+# References:
+Data: http://data.un.org/Data.aspx?d=UNHCR&f=indID%3AType-Ref#UNHCR
